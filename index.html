@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drug Expiry Prevention</title>
+    <title>Drug Expiry Prevention System - AI Powered</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -32,6 +34,7 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             margin-bottom: 30px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
@@ -47,6 +50,14 @@
         .header p {
             color: #666;
             font-size: 1.1em;
+        }
+
+        .export-section {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
         }
 
         .main-grid {
@@ -76,12 +87,55 @@
             text-align: center;
         }
 
-        #reader {
+        .scanner-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .scanner-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: 3px solid #667eea;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .scanner-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .scanner-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .scanner-btn span {
+            font-size: 2em;
+        }
+
+        #reader, #barcode-scanner {
             border: 3px solid #667eea;
             border-radius: 10px;
             overflow: hidden;
             margin: 20px auto;
             max-width: 500px;
+            display: none;
+        }
+
+        #reader.active, #barcode-scanner.active {
+            display: block;
         }
 
         .btn {
@@ -110,7 +164,16 @@
         }
 
         .btn-warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #5bc0de 100%);
+        }
+
+        .btn-sm {
+            padding: 10px 20px;
+            font-size: 0.9em;
         }
 
         .form-group {
@@ -171,7 +234,7 @@
         .alert-warning {
             background: #fff3cd;
             color: #856404;
-            border-left: 5px solid #ffc107;
+            border-left: 5px solid #FFA500;
         }
 
         .alert-danger {
@@ -211,7 +274,7 @@
         }
 
         .medicine-item.warning {
-            border-left-color: #ffc107;
+            border-left-color: #FFA500;
             background: #fff9e6;
         }
 
@@ -246,8 +309,8 @@
         }
 
         .status-warning {
-            background: #ffc107;
-            color: #333;
+            background: #FFA500;
+            color: white;
         }
 
         .status-safe {
@@ -292,7 +355,7 @@
         }
 
         .stat-card.warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%);
         }
 
         .stat-card.success {
@@ -370,6 +433,39 @@
             margin-top: 20px;
         }
 
+        .data-management {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .data-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .data-info-item {
+            text-align: center;
+        }
+
+        .data-info-item strong {
+            display: block;
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .data-info-item span {
+            color: #666;
+            font-size: 0.9em;
+        }
+
         @media (max-width: 1200px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -377,6 +473,14 @@
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+
+            .export-section {
+                position: relative;
+                top: 0;
+                right: 0;
+                justify-content: center;
+                margin-top: 15px;
             }
         }
 
@@ -387,6 +491,14 @@
             
             .header h1 {
                 font-size: 1.8em;
+            }
+
+            .scanner-options {
+                flex-direction: column;
+            }
+
+            .export-section {
+                flex-direction: column;
             }
         }
 
@@ -478,6 +590,45 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        #barcode-scanner canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .scanner-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .history-log {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .history-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid #667eea;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .history-item.delete {
+            border-left-color: #dc3545;
+        }
+
+        .history-item.add {
+            border-left-color: #28a745;
+        }
+
+        .history-item.update {
+            border-left-color: #FFA500;
+        }
     </style>
 </head>
 <body>
@@ -486,10 +637,43 @@
         <div class="header">
             <h1>
                 <span>💊</span>
-               Drug Expiry Prevention
+                Drug Expiry Prevention System
                 <span>🤖</span>
             </h1>
-            <p>ระบบอัจฉริยะ AI-Powered พร้อมการแจ้งเตือนอัตโนมัติและวิเคราะห์ข้อมูล</p>
+            <p>AI-Powered Smart Medicine Management with Advanced Barcode Scanner</p>
+            <div class="export-section">
+                <button class="btn btn-success btn-sm" onclick="exportToExcel()">
+                    📊 Export Excel
+                </button>
+                <button class="btn btn-info btn-sm" onclick="showDataManagement()">
+                    💾 จัดการข้อมูล
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="clearOldData()">
+                    🗑️ ลบข้อมูลเก่า
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Management Info -->
+        <div class="data-management">
+            <div class="data-info">
+                <div class="data-info-item">
+                    <strong id="totalRecords">0</strong>
+                    <span>รายการทั้งหมด</span>
+                </div>
+                <div class="data-info-item">
+                    <strong id="dataSize">0 KB</strong>
+                    <span>ขนาดข้อมูล</span>
+                </div>
+                <div class="data-info-item">
+                    <strong id="oldestData">-</strong>
+                    <span>ข้อมูลเก่าสุด</span>
+                </div>
+                <div class="data-info-item">
+                    <strong id="dataRetention">6 เดือน</strong>
+                    <span>เก็บข้อมูล</span>
+                </div>
+            </div>
         </div>
 
         <!-- Statistics Dashboard -->
@@ -516,11 +700,60 @@
         <div class="main-grid">
             <!-- Scanner Section -->
             <div class="card">
-                <h2>📷 สแกนบาร์โค้ด/QR Code</h2>
+                <h2>📷 Barcode/QR Code Scanner</h2>
                 <div class="scanner-section">
+                    <!-- Scanner Options -->
+                    <div class="scanner-options">
+                        <div class="scanner-btn" onclick="selectScannerMode('qr')">
+                            <span>📱</span>
+                            <div>
+                                <strong>QR Code</strong>
+                                <br>
+                                <small>สแกน QR Code</small>
+                            </div>
+                        </div>
+                        <div class="scanner-btn" onclick="selectScannerMode('barcode')">
+                            <span>📊</span>
+                            <div>
+                                <strong>Barcode</strong>
+                                <br>
+                                <small>สแกนบาร์โค้ด</small>
+                            </div>
+                        </div>
+                        <div class="scanner-btn" onclick="selectScannerMode('photo')">
+                            <span>📸</span>
+                            <div>
+                                <strong>ถ่ายรูป</strong>
+                                <br>
+                                <small>ถ่ายบาร์โค้ด</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR Code Scanner -->
                     <div id="reader"></div>
-                    <button class="btn" onclick="startScanner()">เริ่มสแกน</button>
-                    <button class="btn btn-danger" onclick="stopScanner()">หยุดสแกน</button>
+
+                    <!-- Barcode Scanner -->
+                    <div id="barcode-scanner"></div>
+
+                    <!-- Photo Upload -->
+                    <div id="photo-upload" style="display: none;">
+                        <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
+                        <button class="btn" onclick="document.getElementById('fileInput').click()">
+                            📸 ถ่ายรูปหรือเลือกไฟล์
+                        </button>
+                        <div id="photoPreview" style="margin-top: 20px;"></div>
+                    </div>
+
+                    <div class="scanner-controls">
+                        <button class="btn btn-success" id="startBtn" onclick="startScanner()" style="display: none;">
+                            ▶️ เริ่มสแกน
+                        </button>
+                        <button class="btn btn-danger" id="stopBtn" onclick="stopScanner()" style="display: none;">
+                            ⏹️ หยุดสแกน
+                        </button>
+                    </div>
+
                     <div id="scanResult" class="alert"></div>
                 </div>
             </div>
@@ -597,6 +830,12 @@
                 </div>
             </div>
         </div>
+
+        <!-- Activity History -->
+        <div class="card full-width">
+            <h2>📜 ประวัติการใช้งาน (30 วันล่าสุด)</h2>
+            <div class="history-log" id="historyLog"></div>
+        </div>
     </div>
 
     <!-- Modal for Medicine Details -->
@@ -608,56 +847,405 @@
         </div>
     </div>
 
+    <!-- Data Management Modal -->
+    <div id="dataModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDataModal()">&times;</span>
+            <h2>💾 จัดการข้อมูล</h2>
+            <div id="dataModalContent">
+                <div style="margin: 20px 0;">
+                    <h3>📥 Import ข้อมูล</h3>
+                    <input type="file" id="importFile" accept=".json" style="margin: 10px 0;">
+                    <button class="btn btn-success" onclick="importData()">นำเข้าข้อมูล</button>
+                </div>
+                <div style="margin: 20px 0;">
+                    <h3>📤 Export ข้อมูล</h3>
+                    <button class="btn btn-info" onclick="exportDataJSON()">Export JSON</button>
+                    <button class="btn btn-success" onclick="exportToExcel()">Export Excel</button>
+                </div>
+                <div style="margin: 20px 0;">
+                    <h3>🗑️ ล้างข้อมูล</h3>
+                    <button class="btn btn-warning" onclick="clearOldData()">ลบข้อมูลเก่ากว่า 6 เดือน</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">ลบข้อมูลทั้งหมด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global Variables
-        let medicines = JSON.parse(localStorage.getItem('medicines')) || [];
+        let medicines = [];
+        let activityHistory = [];
         let html5QrCode;
         let statusChart, expiryChart;
+        let currentScannerMode = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            cleanOldDataAutomatically();
+            updateDataInfo();
             loadMedicines();
             updateStatistics();
             generateAIInsights();
             initCharts();
+            loadHistory();
             
-            // Auto-refresh every minute
+            document.getElementById('fileInput').addEventListener('change', handlePhotoUpload);
+            
+            // Auto-refresh and auto-cleanup
             setInterval(() => {
                 updateStatistics();
                 generateAIInsights();
+                updateDataInfo();
             }, 60000);
+
+            // Daily cleanup check
+            setInterval(() => {
+                cleanOldDataAutomatically();
+            }, 86400000); // 24 hours
         });
 
-        // Add Medicine Form Handler
-        document.getElementById('addMedicineForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        // Data Management Functions
+        function loadAllData() {
+            const storedMedicines = localStorage.getItem('medicines');
+            const storedHistory = localStorage.getItem('activityHistory');
             
-            const medicine = {
+            medicines = storedMedicines ? JSON.parse(storedMedicines) : [];
+            activityHistory = storedHistory ? JSON.parse(storedHistory) : [];
+        }
+
+        function saveAllData() {
+            localStorage.setItem('medicines', JSON.stringify(medicines));
+            localStorage.setItem('activityHistory', JSON.stringify(activityHistory));
+            updateDataInfo();
+        }
+
+        function addToHistory(action, details) {
+            const historyItem = {
                 id: Date.now(),
-                name: document.getElementById('medicineName').value,
-                code: document.getElementById('medicineCode').value,
-                expiryDate: document.getElementById('expiryDate').value,
-                quantity: parseInt(document.getElementById('quantity').value),
-                category: document.getElementById('category').value,
-                notes: document.getElementById('notes').value,
-                addedDate: new Date().toISOString(),
-                addedBy: 'ผู้ใช้งาน' // สามารถเชื่อมกับระบบ login ได้
+                action: action,
+                details: details,
+                timestamp: new Date().toISOString(),
+                user: 'ผู้ใช้งาน'
             };
             
-            medicines.push(medicine);
-            saveMedicines();
+            activityHistory.unshift(historyItem);
+            
+            // Keep only last 100 items
+            if (activityHistory.length > 100) {
+                activityHistory = activityHistory.slice(0, 100);
+            }
+            
+            saveAllData();
+            loadHistory();
+        }
+
+        function loadHistory() {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const recentHistory = activityHistory.filter(h => 
+                new Date(h.timestamp) >= thirtyDaysAgo
+            );
+            
+            const html = recentHistory.map(item => `
+                <div class="history-item ${item.action}">
+                    <strong>${getActionIcon(item.action)} ${getActionName(item.action)}</strong>
+                    <br>
+                    ${item.details}
+                    <br>
+                    <small style="color: #999;">${formatDateTime(item.timestamp)} โดย ${item.user}</small>
+                </div>
+            `).join('');
+            
+            document.getElementById('historyLog').innerHTML = html || 
+                '<p style="text-align: center; color: #999; padding: 20px;">ไม่มีประวัติการใช้งาน</p>';
+        }
+
+        function getActionIcon(action) {
+            const icons = {
+                'add': '➕',
+                'delete': '🗑️',
+                'update': '✏️',
+                'dispense': '💊'
+            };
+            return icons[action] || '📝';
+        }
+
+        function getActionName(action) {
+            const names = {
+                'add': 'เพิ่มยา',
+                'delete': 'ลบยา',
+                'update': 'แก้ไขยา',
+                'dispense': 'เบิกจ่ายยา'
+            };
+            return names[action] || 'อื่นๆ';
+        }
+
+        function updateDataInfo() {
+            // Total records
+            document.getElementById('totalRecords').textContent = medicines.length;
+            
+            // Data size
+            const dataString = JSON.stringify(medicines) + JSON.stringify(activityHistory);
+            const sizeKB = (new Blob([dataString]).size / 1024).toFixed(2);
+            document.getElementById('dataSize').textContent = sizeKB + ' KB';
+            
+            // Oldest data
+            if (medicines.length > 0) {
+                const oldestDate = medicines.reduce((oldest, med) => {
+                    const medDate = new Date(med.addedDate);
+                    return medDate < oldest ? medDate : oldest;
+                }, new Date(medicines[0].addedDate));
+                
+                const daysOld = Math.floor((new Date() - oldestDate) / (1000 * 60 * 60 * 24));
+                document.getElementById('oldestData').textContent = daysOld + ' วัน';
+            } else {
+                document.getElementById('oldestData').textContent = '-';
+            }
+        }
+
+        function cleanOldDataAutomatically() {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            
+            const initialCount = medicines.length;
+            medicines = medicines.filter(med => 
+                new Date(med.addedDate) >= sixMonthsAgo
+            );
+            
+            const deletedCount = initialCount - medicines.length;
+            
+            if (deletedCount > 0) {
+                addToHistory('delete', `ระบบลบข้อมูลเก่าอัตโนมัติ ${deletedCount} รายการ (เก่ากว่า 6 เดือน)`);
+                saveAllData();
+                loadMedicines();
+                updateStatistics();
+                console.log(`Auto-deleted ${deletedCount} old records`);
+            }
+        }
+
+        function clearOldData() {
+            if (!confirm('คุณต้องการลบข้อมูลที่เก่ากว่า 6 เดือนใช่หรือไม่?')) {
+                return;
+            }
+            
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            
+            const initialCount = medicines.length;
+            medicines = medicines.filter(med => 
+                new Date(med.addedDate) >= sixMonthsAgo
+            );
+            
+            const deletedCount = initialCount - medicines.length;
+            
+            addToHistory('delete', `ลบข้อมูลเก่าด้วยตนเอง ${deletedCount} รายการ`);
+            saveAllData();
             loadMedicines();
             updateStatistics();
             generateAIInsights();
             updateCharts();
             
-            this.reset();
-            showNotification('เพิ่มยาสำเร็จ!', 'success');
-            playSound('success');
-        });
+            showNotification(`ลบข้อมูลเก่า ${deletedCount} รายการสำเร็จ`, 'success');
+        }
 
-        // Scanner Functions
+        function clearAllData() {
+            if (!confirm('⚠️ คุณแน่ใจหรือไม่ที่จะลบข้อมูลทั้งหมด?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้!')) {
+                return;
+            }
+            
+            if (!confirm('กรุณายืนยันอีกครั้ง: ลบข้อมูลทั้งหมดจริงหรือ?')) {
+                return;
+            }
+            
+            const totalCount = medicines.length;
+            medicines = [];
+            activityHistory = [];
+            
+            saveAllData();
+            loadMedicines();
+            updateStatistics();
+            generateAIInsights();
+            updateCharts();
+            loadHistory();
+            
+            showNotification(`ลบข้อมูลทั้งหมด ${totalCount} รายการสำเร็จ`, 'success');
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            if (medicines.length === 0) {
+                showNotification('ไม่มีข้อมูลให้ Export', 'warning');
+                return;
+            }
+
+            // Prepare data for Excel
+            const excelData = medicines.map(med => {
+                const status = getExpiryStatus(med.expiryDate);
+                const daysUntilExpiry = getDaysUntilExpiry(med.expiryDate);
+                
+                return {
+                    'ชื่อยา': med.name,
+                    'รหัสยา': med.code || '-',
+                    'วันหมดอายุ': formatDate(med.expiryDate),
+                    'วันที่เหลือ': daysUntilExpiry >= 0 ? daysUntilExpiry : `เกินมา ${Math.abs(daysUntilExpiry)}`,
+                    'สถานะ': status.text,
+                    'จำนวน': med.quantity,
+                    'หมวดหมู่': getCategoryName(med.category),
+                    'หมายเหตุ': med.notes || '-',
+                    'วันที่เพิ่ม': formatDateTime(med.addedDate),
+                    'ผู้เพิ่ม': med.addedBy
+                };
+            });
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 30}, // ชื่อยา
+                {wch: 20}, // รหัสยา
+                {wch: 20}, // วันหมดอายุ
+                {wch: 15}, // วันที่เหลือ
+                {wch: 20}, // สถานะ
+                {wch: 10}, // จำนวน
+                {wch: 15}, // หมวดหมู่
+                {wch: 30}, // หมายเหตุ
+                {wch: 25}, // วันที่เพิ่ม
+                {wch: 20}  // ผู้เพิ่ม
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, "Medicine Data");
+
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `Drug_Expiry_Report_${timestamp}.xlsx`;
+
+            // Save file
+            XLSX.writeFile(wb, filename);
+
+            addToHistory('export', `Export ข้อมูลเป็น Excel: ${filename} (${medicines.length} รายการ)`);
+            showNotification('Export Excel สำเร็จ!', 'success');
+            playSound('success');
+        }
+
+        // Export to JSON
+        function exportDataJSON() {
+            const exportData = {
+                medicines: medicines,
+                history: activityHistory,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            link.download = `drug_expiry_backup_${timestamp}.json`;
+            link.href = url;
+            link.click();
+
+            addToHistory('export', `Export ข้อมูลเป็น JSON (${medicines.length} รายการ)`);
+            showNotification('Export JSON สำเร็จ!', 'success');
+        }
+
+        // Import Data
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showNotification('กรุณาเลือกไฟล์', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importData = JSON.parse(e.target.result);
+                    
+                    if (importData.medicines && Array.isArray(importData.medicines)) {
+                        if (confirm(`พบข้อมูล ${importData.medicines.length} รายการ\nต้องการนำเข้าหรือไม่?`)) {
+                            medicines = importData.medicines;
+                            if (importData.history) {
+                                activityHistory = importData.history;
+                            }
+                            
+                            saveAllData();
+                            loadMedicines();
+                            updateStatistics();
+                            generateAIInsights();
+                            updateCharts();
+                            loadHistory();
+                            
+                            addToHistory('import', `นำเข้าข้อมูล ${medicines.length} รายการ จากไฟล์ ${file.name}`);
+                            showNotification('นำเข้าข้อมูลสำเร็จ!', 'success');
+                            closeDataModal();
+                        }
+                    } else {
+                        showNotification('รูปแบบไฟล์ไม่ถูกต้อง', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Import error:', error);
+                    showNotification('เกิดข้อผิดพลาดในการนำเข้าข้อมูล', 'danger');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showDataManagement() {
+            document.getElementById('dataModal').style.display = 'block';
+        }
+
+        function closeDataModal() {
+            document.getElementById('dataModal').style.display = 'none';
+        }
+
+        // Scanner Mode Selection
+        function selectScannerMode(mode) {
+            stopScanner();
+            
+            document.querySelectorAll('.scanner-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById('reader').classList.remove('active');
+            document.getElementById('barcode-scanner').classList.remove('active');
+            document.getElementById('photo-upload').style.display = 'none';
+            
+            currentScannerMode = mode;
+            event.target.closest('.scanner-btn').classList.add('active');
+            
+            if (mode === 'qr') {
+                document.getElementById('reader').classList.add('active');
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('stopBtn').style.display = 'inline-block';
+            } else if (mode === 'barcode') {
+                document.getElementById('barcode-scanner').classList.add('active');
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('stopBtn').style.display = 'inline-block';
+            } else if (mode === 'photo') {
+                document.getElementById('photo-upload').style.display = 'block';
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'none';
+            }
+        }
+
         function startScanner() {
+            if (currentScannerMode === 'qr') {
+                startQRScanner();
+            } else if (currentScannerMode === 'barcode') {
+                startBarcodeScanner();
+            }
+        }
+
+        function startQRScanner() {
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("reader");
             }
@@ -673,16 +1261,107 @@
                 onScanSuccess,
                 onScanFailure
             ).catch(err => {
-                console.error("Unable to start scanner:", err);
+                console.error("Unable to start QR scanner:", err);
                 showNotification('ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาต', 'danger');
             });
         }
 
+        function startBarcodeScanner() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#barcode-scanner'),
+                    constraints: {
+                        facingMode: "environment"
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader"
+                    ]
+                },
+                locate: true
+            }, function(err) {
+                if (err) {
+                    console.error("Unable to start barcode scanner:", err);
+                    showNotification('ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาต', 'danger');
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                onScanSuccess(code);
+                stopScanner();
+            });
+        }
+
+        function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const preview = document.getElementById('photoPreview');
+                    preview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; border-radius: 10px; margin-bottom: 15px;">`;
+                    
+                    scanBarcodeFromImage(event.target.result);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function scanBarcodeFromImage(imageSrc) {
+            Quagga.decodeSingle({
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader"
+                    ]
+                },
+                locate: true,
+                src: imageSrc
+            }, function(result) {
+                if (result && result.codeResult) {
+                    onScanSuccess(result.codeResult.code);
+                } else {
+                    showNotification('ไม่พบบาร์โค้ดในรูปภาพ กรุณาลองใหม่', 'warning');
+                }
+            });
+        }
+
         function stopScanner() {
-            if (html5QrCode) {
+            if (html5QrCode && currentScannerMode === 'qr') {
                 html5QrCode.stop().then(() => {
-                    showNotification('หยุดสแกนแล้ว', 'info');
+                    showNotification('หยุดสแกน QR Code แล้ว', 'info');
+                }).catch(err => {
+                    console.error("Error stopping QR scanner:", err);
                 });
+            }
+            
+            if (currentScannerMode === 'barcode') {
+                Quagga.stop();
+                showNotification('หยุดสแกนบาร์โค้ดแล้ว', 'info');
             }
         }
 
@@ -690,7 +1369,6 @@
             playSound('beep');
             document.getElementById('medicineCode').value = decodedText;
             
-            // Check if medicine exists
             const existingMedicine = medicines.find(m => m.code === decodedText);
             if (existingMedicine) {
                 showMedicineDetails(existingMedicine);
@@ -700,18 +1378,40 @@
                     `รหัส: ${decodedText} - ยังไม่มีในระบบ กรุณากรอกข้อมูล`;
                 document.getElementById('scanResult').style.display = 'block';
             }
-            
-            stopScanner();
         }
 
         function onScanFailure(error) {
-            // Silent fail for continuous scanning
+            // Silent fail
         }
 
-        // Medicine Management
-        function saveMedicines() {
-            localStorage.setItem('medicines', JSON.stringify(medicines));
-        }
+        // Add Medicine Form Handler
+        document.getElementById('addMedicineForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const medicine = {
+                id: Date.now(),
+                name: document.getElementById('medicineName').value,
+                code: document.getElementById('medicineCode').value,
+                expiryDate: document.getElementById('expiryDate').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                category: document.getElementById('category').value,
+                notes: document.getElementById('notes').value,
+                addedDate: new Date().toISOString(),
+                addedBy: 'ผู้ใช้งาน'
+            };
+            
+            medicines.push(medicine);
+            addToHistory('add', `เพิ่มยา: ${medicine.name} (${medicine.code || 'ไม่มีรหัส'})`);
+            saveAllData();
+            loadMedicines();
+            updateStatistics();
+            generateAIInsights();
+            updateCharts();
+            
+            this.reset();
+            showNotification('เพิ่มยาสำเร็จ!', 'success');
+            playSound('success');
+        });
 
         function loadMedicines() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -720,7 +1420,7 @@
             if (searchTerm) {
                 filteredMedicines = medicines.filter(m => 
                     m.name.toLowerCase().includes(searchTerm) ||
-                    m.code.toLowerCase().includes(searchTerm)
+                    (m.code && m.code.toLowerCase().includes(searchTerm))
                 );
             }
             
@@ -813,7 +1513,8 @@
             
             if (medicine.quantity > 0) {
                 medicine.quantity--;
-                saveMedicines();
+                addToHistory('dispense', `เบิกจ่ายยา: ${medicine.name} (เหลือ ${medicine.quantity} หน่วย)`);
+                saveAllData();
                 loadMedicines();
                 updateStatistics();
                 showNotification(`เบิกจ่าย ${medicine.name} สำเร็จ (เหลือ ${medicine.quantity} หน่วย)`, 'success');
@@ -835,24 +1536,33 @@
             document.getElementById('category').value = medicine.category;
             document.getElementById('notes').value = medicine.notes;
             
-            deleteMedicine(id);
+            deleteMedicine(id, true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             showNotification('กรุณาแก้ไขข้อมูลและบันทึกใหม่', 'info');
         }
 
-        function deleteMedicine(id) {
-            if (confirm('คุณแน่ใจว่าต้องการลบยานี้?')) {
-                medicines = medicines.filter(m => m.id !== id);
-                saveMedicines();
-                loadMedicines();
-                updateStatistics();
-                generateAIInsights();
-                updateCharts();
+        function deleteMedicine(id, isEdit = false) {
+            if (!isEdit && !confirm('คุณแน่ใจว่าต้องการลบยานี้?')) {
+                return;
+            }
+            
+            const medicine = medicines.find(m => m.id === id);
+            if (medicine && !isEdit) {
+                addToHistory('delete', `ลบยา: ${medicine.name} (${medicine.code || 'ไม่มีรหัส'})`);
+            }
+            
+            medicines = medicines.filter(m => m.id !== id);
+            saveAllData();
+            loadMedicines();
+            updateStatistics();
+            generateAIInsights();
+            updateCharts();
+            
+            if (!isEdit) {
                 showNotification('ลบยาสำเร็จ', 'success');
             }
         }
 
-        // Statistics
         function updateStatistics() {
             const total = medicines.length;
             let expired = 0, warning = 0, safe = 0;
@@ -872,12 +1582,9 @@
             updateCharts();
         }
 
-        // AI Insights
         function generateAIInsights() {
             const insights = [];
-            const today = new Date();
             
-            // Analyze expiry trends
             const expiringSoon = medicines.filter(m => {
                 const days = getDaysUntilExpiry(m.expiryDate);
                 return days >= 0 && days < 90;
@@ -887,14 +1594,12 @@
             
             const expired = medicines.filter(m => getDaysUntilExpiry(m.expiryDate) < 0);
             
-            // Generate insights
             if (expired.length > 0) {
                 insights.push({
                     type: 'critical',
                     icon: '🚨',
                     title: 'ยาหมดอายุ - ดำเนินการด่วน!',
                     message: `มียาหมดอายุแล้ว ${expired.length} รายการ ควรนำออกจากระบบทันที`,
-                    action: 'ดูรายการ',
                     medicines: expired
                 });
             }
@@ -906,12 +1611,10 @@
                     icon: '⚠️',
                     title: 'ยาที่ควรใช้ก่อน',
                     message: `มียา ${expiringSoon.length} รายการที่ใกล้หมดอายุภายใน 3 เดือน`,
-                    action: 'ดูรายการ',
                     medicines: top3
                 });
             }
             
-            // Stock analysis
             const lowStock = medicines.filter(m => m.quantity < 10 && getDaysUntilExpiry(m.expiryDate) > 0);
             if (lowStock.length > 0) {
                 insights.push({
@@ -919,20 +1622,17 @@
                     icon: '📦',
                     title: 'สต็อกต่ำ',
                     message: `มียา ${lowStock.length} รายการที่เหลือน้อย (< 10 หน่วย) ควรสั่งซื้อเพิ่ม`,
-                    action: 'ดูรายการ',
                     medicines: lowStock
                 });
             }
             
-            // AI Prediction
-            const monthlyUsage = calculateMonthlyUsage();
+            const monthlyUsage = medicines.length * 0.2;
             if (monthlyUsage > 0) {
                 insights.push({
                     type: 'success',
                     icon: '📊',
                     title: 'AI Prediction',
-                    message: `คาดการณ์การใช้ยาต่อเดือน: ${monthlyUsage.toFixed(0)} รายการ | ประสิทธิภาพการจัดการ: 85%`,
-                    action: null
+                    message: `คาดการณ์การใช้ยาต่อเดือน: ${monthlyUsage.toFixed(0)} รายการ | ประสิทธิภาพการจัดการ: 85%`
                 });
             }
             
@@ -953,11 +1653,6 @@
                             ).join('')}
                         </ul>` : ''
                     }
-                    ${insight.action ? 
-                        `<button class="btn btn-sm" style="padding: 8px 15px; font-size: 0.9em;">
-                            ${insight.action}
-                        </button>` : ''
-                    }
                 </div>
             `).join('');
             
@@ -965,14 +1660,7 @@
                 '<p style="text-align: center; opacity: 0.8;">ไม่มีข้อเสนอแนะในขณะนี้ ระบบทำงานได้ดี! ✅</p>';
         }
 
-        function calculateMonthlyUsage() {
-            // Simple calculation - can be enhanced with real usage data
-            return medicines.length * 0.2; // Assume 20% monthly turnover
-        }
-
-        // Charts
         function initCharts() {
-            // Status Chart
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
@@ -980,7 +1668,7 @@
                     labels: ['ปลอดภัย', 'ใกล้หมดอายุ', 'หมดอายุแล้ว'],
                     datasets: [{
                         data: [0, 0, 0],
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                        backgroundColor: ['#28a745', '#FFA500', '#dc3545']
                     }]
                 },
                 options: {
@@ -994,7 +1682,6 @@
                 }
             });
             
-            // Expiry Chart
             const expiryCtx = document.getElementById('expiryChart').getContext('2d');
             expiryChart = new Chart(expiryCtx, {
                 type: 'bar',
@@ -1003,7 +1690,7 @@
                     datasets: [{
                         label: 'จำนวนยา',
                         data: [0, 0, 0, 0],
-                        backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745']
+                        backgroundColor: ['#dc3545', '#FFA500', '#17a2b8', '#28a745']
                     }]
                 },
                 options: {
@@ -1051,7 +1738,6 @@
             expiryChart.update();
         }
 
-        // Utility Functions
         function getExpiryStatus(expiryDate) {
             const days = getDaysUntilExpiry(expiryDate);
             if (days < 0) {
@@ -1129,7 +1815,6 @@
         }
 
         function playSound(type) {
-            // Web Audio API for sound effects
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -1163,20 +1848,21 @@
             }
         }
 
-        // Search functionality
         document.getElementById('searchInput').addEventListener('input', function() {
             loadMedicines();
         });
 
-        // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('medicineModal');
+            const dataModal = document.getElementById('dataModal');
             if (event.target === modal) {
                 closeModal();
             }
+            if (event.target === dataModal) {
+                closeDataModal();
+            }
         }
 
-        // Auto-check for expiring medicines on load
         window.addEventListener('load', function() {
             setTimeout(() => {
                 const expiringSoon = medicines.filter(m => {
@@ -1192,6 +1878,4 @@
         });
     </script>
 </body>
-
 </html>
-
