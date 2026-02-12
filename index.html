@@ -34,7 +34,6 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             margin-bottom: 30px;
             text-align: center;
-            position: relative;
         }
 
         .header h1 {
@@ -50,14 +49,6 @@
         .header p {
             color: #666;
             font-size: 1.1em;
-        }
-
-        .export-section {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            display: flex;
-            gap: 10px;
         }
 
         .main-grid {
@@ -466,6 +457,13 @@
             font-size: 0.9em;
         }
 
+        .export-section {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
         @media (max-width: 1200px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -473,14 +471,6 @@
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
-            }
-
-            .export-section {
-                position: relative;
-                top: 0;
-                right: 0;
-                justify-content: center;
-                margin-top: 15px;
             }
         }
 
@@ -641,17 +631,6 @@
                 <span>🤖</span>
             </h1>
             <p>AI-Powered Smart Medicine Management with Advanced Barcode Scanner</p>
-            <div class="export-section">
-                <button class="btn btn-success btn-sm" onclick="exportToExcel()">
-                    📊 Export Excel
-                </button>
-                <button class="btn btn-info btn-sm" onclick="showDataManagement()">
-                    💾 จัดการข้อมูล
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="clearOldData()">
-                    🗑️ ลบข้อมูลเก่า
-                </button>
-            </div>
         </div>
 
         <!-- Data Management Info -->
@@ -673,6 +652,18 @@
                     <strong id="dataRetention">6 เดือน</strong>
                     <span>เก็บข้อมูล</span>
                 </div>
+            </div>
+            <!-- Export Section - ย้ายมาไว้ที่นี่ -->
+            <div class="export-section">
+                <button class="btn btn-success btn-sm" onclick="exportToExcel()">
+                    📊 Export Excel
+                </button>
+                <button class="btn btn-info btn-sm" onclick="showDataManagement()">
+                    💾 จัดการข้อมูล
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="clearOldData()">
+                    🗑️ ลบข้อมูลเก่า
+                </button>
             </div>
         </div>
 
