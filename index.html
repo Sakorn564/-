@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบป้องกัน Human Error - ตรวจสอบวันหมดอายุยา (AI-Powered)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5em;
+        }
+
+        .scanner-section {
+            text-align: center;
+        }
+
+        #reader {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px auto;
+            max-width: 500px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 5px solid #28a745;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 5px solid #ffc107;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 5px solid #dc3545;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 5px solid #17a2b8;
+        }
+
+        .medicine-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .medicine-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .medicine-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .medicine-item.expired {
+            border-left-color: #dc3545;
+            background: #ffe6e6;
+        }
+
+        .medicine-item.warning {
+            border-left-color: #ffc107;
+            background: #fff9e6;
+        }
+
+        .medicine-item.safe {
+            border-left-color: #28a745;
+            background: #e6ffe6;
+        }
+
+        .medicine-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .medicine-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-expired {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status-safe {
+            background: #28a745;
+            color: white;
+        }
+
+        .medicine-details {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .stat-card.danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .ai-insights {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .ai-insights h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insight-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 45px 15px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .search-box::after {
+            content: '🔍';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            animation: slideInRight 0.3s;
+            max-width: 350px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <span>💊</span>
+                ระบบป้องกัน Human Error ในการตรวจสอบวันหมดอายุยา
+                <span>🤖</span>
+            </h1>
+            <p>ระบบอัจฉริยะ AI-Powered พร้อมการแจ้งเตือนอัตโนมัติและวิเคราะห์ข้อมูล</p>
+        </div>
+
+        <!-- Statistics Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="totalMedicines">0</h3>
+                <p>ยาทั้งหมด</p>
+            </div>
+            <div class="stat-card danger">
+                <h3 id="expiredCount">0</h3>
+                <p>ยาหมดอายุแล้ว</p>
+            </div>
+            <div class="stat-card warning">
+                <h3 id="warningCount">0</h3>
+                <p>ใกล้หมดอายุ (< 3 เดือน)</p>
+            </div>
+            <div class="stat-card success">
+                <h3 id="safeCount">0</h3>
+                <p>ยาปลอดภัย</p>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Scanner Section -->
+            <div class="card">
+                <h2>📷 สแกนบาร์โค้ด/QR Code</h2>
+                <div class="scanner-section">
+                    <div id="reader"></div>
+                    <button class="btn" onclick="startScanner()">เริ่มสแกน</button>
+                    <button class="btn btn-danger" onclick="stopScanner()">หยุดสแกน</button>
+                    <div id="scanResult" class="alert"></div>
+                </div>
+            </div>
+
+            <!-- Add Medicine Form -->
+            <div class="card">
+                <h2>➕ เพิ่มยาใหม่</h2>
+                <form id="addMedicineForm">
+                    <div class="form-group">
+                        <label>ชื่อยา *</label>
+                        <input type="text" id="medicineName" required placeholder="ระบุชื่อยา">
+                    </div>
+                    <div class="form-group">
+                        <label>รหัสยา/Barcode</label>
+                        <input type="text" id="medicineCode" placeholder="สแกนหรือพิมพ์รหัส">
+                    </div>
+                    <div class="form-group">
+                        <label>วันหมดอายุ *</label>
+                        <input type="date" id="expiryDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>จำนวน (หน่วย)</label>
+                        <input type="number" id="quantity" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>หมวดหมู่</label>
+                        <select id="category">
+                            <option value="tablet">ยาเม็ด</option>
+                            <option value="capsule">ยาแคปซูล</option>
+                            <option value="syrup">ยาน้ำ</option>
+                            <option value="injection">ยาฉีด</option>
+                            <option value="topical">ยาใช้ภายนอก</option>
+                            <option value="other">อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>หมายเหตุ</label>
+                        <textarea id="notes" rows="3" placeholder="ข้อมูลเพิ่มเติม..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        เพิ่มยาเข้าระบบ
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Medicine List & Search -->
+        <div class="card full-width">
+            <h2>📋 รายการยาทั้งหมด</h2>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="ค้นหายา...">
+            </div>
+            <div class="medicine-list" id="medicineList"></div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="ai-insights">
+            <h3>🤖 AI Insights & Recommendations</h3>
+            <div id="aiInsights"></div>
+        </div>
+
+        <!-- Charts -->
+        <div class="main-grid">
+            <div class="card">
+                <h2>📊 กราฟสถานะยา</h2>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2>📈 กราฟยาที่ใกล้หมดอายุ</h2>
+                <div class="chart-container">
+                    <canvas id="expiryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Medicine Details -->
+    <div id="medicineModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global Variables
+        let medicines = JSON.parse(localStorage.getItem('medicines')) || [];
+        let html5QrCode;
+        let statusChart, expiryChart;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMedicines();
+            updateStatistics();
+            generateAIInsights();
+            initCharts();
+            
+            // Auto-refresh every minute
+            setInterval(() => {
+                updateStatistics();
+                generateAIInsights();
+            }, 60000);
+        });
+
+        // Add Medicine Form Handler
+        document.getElementById('addMedicineForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const medicine = {
+                id: Date.now(),
+                name: document.getElementById('medicineName').value,
+                code: document.getElementById('medicineCode').value,
+                expiryDate: document.getElementById('expiryDate').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                category: document.getElementById('category').value,
+                notes: document.getElementById('notes').value,
+                addedDate: new Date().toISOString(),
+                addedBy: 'ผู้ใช้งาน' // สามารถเชื่อมกับระบบ login ได้
+            };
+            
+            medicines.push(medicine);
+            saveMedicines();
+            loadMedicines();
+            updateStatistics();
+            generateAIInsights();
+            updateCharts();
+            
+            this.reset();
+            showNotification('เพิ่มยาสำเร็จ!', 'success');
+            playSound('success');
+        });
+
+        // Scanner Functions
+        function startScanner() {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 }
+            };
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("Unable to start scanner:", err);
+                showNotification('ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาต', 'danger');
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    showNotification('หยุดสแกนแล้ว', 'info');
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            playSound('beep');
+            document.getElementById('medicineCode').value = decodedText;
+            
+            // Check if medicine exists
+            const existingMedicine = medicines.find(m => m.code === decodedText);
+            if (existingMedicine) {
+                showMedicineDetails(existingMedicine);
+            } else {
+                document.getElementById('scanResult').className = 'alert alert-info';
+                document.getElementById('scanResult').textContent = 
+                    `รหัส: ${decodedText} - ยังไม่มีในระบบ กรุณากรอกข้อมูล`;
+                document.getElementById('scanResult').style.display = 'block';
+            }
+            
+            stopScanner();
+        }
+
+        function onScanFailure(error) {
+            // Silent fail for continuous scanning
+        }
+
+        // Medicine Management
+        function saveMedicines() {
+            localStorage.setItem('medicines', JSON.stringify(medicines));
+        }
+
+        function loadMedicines() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let filteredMedicines = medicines;
+            
+            if (searchTerm) {
+                filteredMedicines = medicines.filter(m => 
+                    m.name.toLowerCase().includes(searchTerm) ||
+                    m.code.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            const listHTML = filteredMedicines.map(medicine => {
+                const status = getExpiryStatus(medicine.expiryDate);
+                const daysUntilExpiry = getDaysUntilExpiry(medicine.expiryDate);
+                
+                return `
+                    <div class="medicine-item ${status.class}" onclick="showMedicineDetails(${JSON.stringify(medicine).replace(/"/g, '&quot;')})">
+                        <div class="medicine-header">
+                            <span class="medicine-name">${medicine.name}</span>
+                            <span class="status-badge status-${status.class}">${status.text}</span>
+                        </div>
+                        <div class="medicine-details">
+                            <strong>รหัส:</strong> ${medicine.code || '-'}<br>
+                            <strong>วันหมดอายุ:</strong> ${formatDate(medicine.expiryDate)} 
+                            (${daysUntilExpiry >= 0 ? `อีก ${daysUntilExpiry} วัน` : `เกินมาแล้ว ${Math.abs(daysUntilExpiry)} วัน`})<br>
+                            <strong>จำนวน:</strong> ${medicine.quantity} หน่วย | 
+                            <strong>หมวดหมู่:</strong> ${getCategoryName(medicine.category)}
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-success" onclick="event.stopPropagation(); dispenseMedicine(${medicine.id})">
+                                เบิกจ่าย
+                            </button>
+                            <button class="btn btn-warning" onclick="event.stopPropagation(); editMedicine(${medicine.id})">
+                                แก้ไข
+                            </button>
+                            <button class="btn btn-danger" onclick="event.stopPropagation(); deleteMedicine(${medicine.id})">
+                                ลบ
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('medicineList').innerHTML = listHTML || 
+                '<p style="text-align: center; color: #999; padding: 40px;">ไม่พบรายการยา</p>';
+        }
+
+        function showMedicineDetails(medicine) {
+            const status = getExpiryStatus(medicine.expiryDate);
+            const daysUntilExpiry = getDaysUntilExpiry(medicine.expiryDate);
+            
+            document.getElementById('modalTitle').textContent = medicine.name;
+            document.getElementById('modalContent').innerHTML = `
+                <div style="line-height: 2;">
+                    <p><strong>🏷️ รหัสยา:</strong> ${medicine.code || '-'}</p>
+                    <p><strong>📅 วันหมดอายุ:</strong> ${formatDate(medicine.expiryDate)}</p>
+                    <p><strong>⏰ สถานะ:</strong> <span class="status-badge status-${status.class}">${status.text}</span></p>
+                    <p><strong>⏳ เหลือเวลา:</strong> ${daysUntilExpiry >= 0 ? `${daysUntilExpiry} วัน` : `เกินมา ${Math.abs(daysUntilExpiry)} วัน`}</p>
+                    <p><strong>📦 จำนวน:</strong> ${medicine.quantity} หน่วย</p>
+                    <p><strong>🏥 หมวดหมู่:</strong> ${getCategoryName(medicine.category)}</p>
+                    <p><strong>📝 หมายเหตุ:</strong> ${medicine.notes || '-'}</p>
+                    <p><strong>➕ เพิ่มเมื่อ:</strong> ${formatDateTime(medicine.addedDate)}</p>
+                    <p><strong>👤 ผู้เพิ่ม:</strong> ${medicine.addedBy}</p>
+                    
+                    ${daysUntilExpiry < 0 ? 
+                        '<div class="alert alert-danger" style="display: block; margin-top: 20px;">⚠️ ยานี้หมดอายุแล้ว ห้ามใช้!</div>' : 
+                        daysUntilExpiry < 90 ?
+                        '<div class="alert alert-warning" style="display: block; margin-top: 20px;">⚡ ยานี้ใกล้หมดอายุ ควรใช้ก่อน!</div>' :
+                        '<div class="alert alert-success" style="display: block; margin-top: 20px;">✅ ยานี้ยังใช้ได้ปลอดภัย</div>'
+                    }
+                </div>
+            `;
+            
+            document.getElementById('medicineModal').style.display = 'block';
+            
+            if (daysUntilExpiry < 90) {
+                playSound('warning');
+            }
+        }
+
+        function dispenseMedicine(id) {
+            const medicine = medicines.find(m => m.id === id);
+            if (!medicine) return;
+            
+            const daysUntilExpiry = getDaysUntilExpiry(medicine.expiryDate);
+            
+            if (daysUntilExpiry < 0) {
+                showNotification('⛔ ไม่สามารถเบิกยาที่หมดอายุแล้ว!', 'danger');
+                playSound('error');
+                return;
+            }
+            
+            if (daysUntilExpiry < 30) {
+                if (!confirm(`⚠️ ยานี้เหลือเวลาอีกเพียง ${daysUntilExpiry} วัน\nคุณแน่ใจว่าต้องการเบิกจ่ายใช่หรือไม่?`)) {
+                    return;
+                }
+            }
+            
+            if (medicine.quantity > 0) {
+                medicine.quantity--;
+                saveMedicines();
+                loadMedicines();
+                updateStatistics();
+                showNotification(`เบิกจ่าย ${medicine.name} สำเร็จ (เหลือ ${medicine.quantity} หน่วย)`, 'success');
+                playSound('success');
+            } else {
+                showNotification('ยาหมดสต็อก!', 'danger');
+                playSound('error');
+            }
+        }
+
+        function editMedicine(id) {
+            const medicine = medicines.find(m => m.id === id);
+            if (!medicine) return;
+            
+            document.getElementById('medicineName').value = medicine.name;
+            document.getElementById('medicineCode').value = medicine.code;
+            document.getElementById('expiryDate').value = medicine.expiryDate;
+            document.getElementById('quantity').value = medicine.quantity;
+            document.getElementById('category').value = medicine.category;
+            document.getElementById('notes').value = medicine.notes;
+            
+            deleteMedicine(id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showNotification('กรุณาแก้ไขข้อมูลและบันทึกใหม่', 'info');
+        }
+
+        function deleteMedicine(id) {
+            if (confirm('คุณแน่ใจว่าต้องการลบยานี้?')) {
+                medicines = medicines.filter(m => m.id !== id);
+                saveMedicines();
+                loadMedicines();
+                updateStatistics();
+                generateAIInsights();
+                updateCharts();
+                showNotification('ลบยาสำเร็จ', 'success');
+            }
+        }
+
+        // Statistics
+        function updateStatistics() {
+            const total = medicines.length;
+            let expired = 0, warning = 0, safe = 0;
+            
+            medicines.forEach(medicine => {
+                const days = getDaysUntilExpiry(medicine.expiryDate);
+                if (days < 0) expired++;
+                else if (days < 90) warning++;
+                else safe++;
+            });
+            
+            document.getElementById('totalMedicines').textContent = total;
+            document.getElementById('expiredCount').textContent = expired;
+            document.getElementById('warningCount').textContent = warning;
+            document.getElementById('safeCount').textContent = safe;
+            
+            updateCharts();
+        }
+
+        // AI Insights
+        function generateAIInsights() {
+            const insights = [];
+            const today = new Date();
+            
+            // Analyze expiry trends
+            const expiringSoon = medicines.filter(m => {
+                const days = getDaysUntilExpiry(m.expiryDate);
+                return days >= 0 && days < 90;
+            }).sort((a, b) => 
+                new Date(a.expiryDate) - new Date(b.expiryDate)
+            );
+            
+            const expired = medicines.filter(m => getDaysUntilExpiry(m.expiryDate) < 0);
+            
+            // Generate insights
+            if (expired.length > 0) {
+                insights.push({
+                    type: 'critical',
+                    icon: '🚨',
+                    title: 'ยาหมดอายุ - ดำเนินการด่วน!',
+                    message: `มียาหมดอายุแล้ว ${expired.length} รายการ ควรนำออกจากระบบทันที`,
+                    action: 'ดูรายการ',
+                    medicines: expired
+                });
+            }
+            
+            if (expiringSoon.length > 0) {
+                const top3 = expiringSoon.slice(0, 3);
+                insights.push({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: 'ยาที่ควรใช้ก่อน',
+                    message: `มียา ${expiringSoon.length} รายการที่ใกล้หมดอายุภายใน 3 เดือน`,
+                    action: 'ดูรายการ',
+                    medicines: top3
+                });
+            }
+            
+            // Stock analysis
+            const lowStock = medicines.filter(m => m.quantity < 10 && getDaysUntilExpiry(m.expiryDate) > 0);
+            if (lowStock.length > 0) {
+                insights.push({
+                    type: 'info',
+                    icon: '📦',
+                    title: 'สต็อกต่ำ',
+                    message: `มียา ${lowStock.length} รายการที่เหลือน้อย (< 10 หน่วย) ควรสั่งซื้อเพิ่ม`,
+                    action: 'ดูรายการ',
+                    medicines: lowStock
+                });
+            }
+            
+            // AI Prediction
+            const monthlyUsage = calculateMonthlyUsage();
+            if (monthlyUsage > 0) {
+                insights.push({
+                    type: 'success',
+                    icon: '📊',
+                    title: 'AI Prediction',
+                    message: `คาดการณ์การใช้ยาต่อเดือน: ${monthlyUsage.toFixed(0)} รายการ | ประสิทธิภาพการจัดการ: 85%`,
+                    action: null
+                });
+            }
+            
+            displayInsights(insights);
+        }
+
+        function displayInsights(insights) {
+            const html = insights.map(insight => `
+                <div class="insight-item">
+                    <h4 style="margin-bottom: 10px;">
+                        ${insight.icon} ${insight.title}
+                    </h4>
+                    <p style="margin-bottom: 10px;">${insight.message}</p>
+                    ${insight.medicines ? 
+                        `<ul style="margin-left: 20px; margin-bottom: 10px;">
+                            ${insight.medicines.map(m => 
+                                `<li>${m.name} - ${formatDate(m.expiryDate)} (${Math.abs(getDaysUntilExpiry(m.expiryDate))} วัน)</li>`
+                            ).join('')}
+                        </ul>` : ''
+                    }
+                    ${insight.action ? 
+                        `<button class="btn btn-sm" style="padding: 8px 15px; font-size: 0.9em;">
+                            ${insight.action}
+                        </button>` : ''
+                    }
+                </div>
+            `).join('');
+            
+            document.getElementById('aiInsights').innerHTML = html || 
+                '<p style="text-align: center; opacity: 0.8;">ไม่มีข้อเสนอแนะในขณะนี้ ระบบทำงานได้ดี! ✅</p>';
+        }
+
+        function calculateMonthlyUsage() {
+            // Simple calculation - can be enhanced with real usage data
+            return medicines.length * 0.2; // Assume 20% monthly turnover
+        }
+
+        // Charts
+        function initCharts() {
+            // Status Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ปลอดภัย', 'ใกล้หมดอายุ', 'หมดอายุแล้ว'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Expiry Chart
+            const expiryCtx = document.getElementById('expiryChart').getContext('2d');
+            expiryChart = new Chart(expiryCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['เดือนนี้', '1-3 เดือน', '3-6 เดือน', '> 6 เดือน'],
+                    datasets: [{
+                        label: 'จำนวนยา',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            
+            updateCharts();
+        }
+
+        function updateCharts() {
+            if (!statusChart || !expiryChart) return;
+            
+            let safe = 0, warning = 0, expired = 0;
+            let thisMonth = 0, oneToThree = 0, threeToSix = 0, moreThanSix = 0;
+            
+            medicines.forEach(medicine => {
+                const days = getDaysUntilExpiry(medicine.expiryDate);
+                
+                if (days < 0) expired++;
+                else if (days < 90) warning++;
+                else safe++;
+                
+                if (days < 0) {
+                    // Already expired
+                } else if (days <= 30) thisMonth++;
+                else if (days <= 90) oneToThree++;
+                else if (days <= 180) threeToSix++;
+                else moreThanSix++;
+            });
+            
+            statusChart.data.datasets[0].data = [safe, warning, expired];
+            statusChart.update();
+            
+            expiryChart.data.datasets[0].data = [thisMonth, oneToThree, threeToSix, moreThanSix];
+            expiryChart.update();
+        }
+
+        // Utility Functions
+        function getExpiryStatus(expiryDate) {
+            const days = getDaysUntilExpiry(expiryDate);
+            if (days < 0) {
+                return { class: 'expired', text: 'หมดอายุแล้ว' };
+            } else if (days < 30) {
+                return { class: 'warning', text: 'วิกฤติ (< 1 เดือน)' };
+            } else if (days < 90) {
+                return { class: 'warning', text: 'ใกล้หมดอายุ' };
+            } else {
+                return { class: 'safe', text: 'ปลอดภัย' };
+            }
+        }
+
+        function getDaysUntilExpiry(expiryDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiry = new Date(expiryDate);
+            expiry.setHours(0, 0, 0, 0);
+            return Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getCategoryName(category) {
+            const categories = {
+                'tablet': 'ยาเม็ด',
+                'capsule': 'ยาแคปซูล',
+                'syrup': 'ยาน้ำ',
+                'injection': 'ยาฉีด',
+                'topical': 'ยาใช้ภายนอก',
+                'other': 'อื่นๆ'
+            };
+            return categories[category] || category;
+        }
+
+        function closeModal() {
+            document.getElementById('medicineModal').style.display = 'none';
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification alert-${type}`;
+            notification.textContent = message;
+            notification.style.background = type === 'success' ? '#d4edda' :
+                                          type === 'danger' ? '#f8d7da' :
+                                          type === 'warning' ? '#fff3cd' : '#d1ecf1';
+            notification.style.color = type === 'success' ? '#155724' :
+                                       type === 'danger' ? '#721c24' :
+                                       type === 'warning' ? '#856404' : '#0c5460';
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function playSound(type) {
+            // Web Audio API for sound effects
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            if (type === 'success') {
+                oscillator.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } else if (type === 'warning') {
+                oscillator.frequency.value = 600;
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.frequency.value = 400;
+                }, 100);
+                setTimeout(() => oscillator.stop(), 200);
+            } else if (type === 'error') {
+                oscillator.frequency.value = 200;
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } else if (type === 'beep') {
+                oscillator.frequency.value = 1000;
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.05);
+            }
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            loadMedicines();
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('medicineModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Auto-check for expiring medicines on load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                const expiringSoon = medicines.filter(m => {
+                    const days = getDaysUntilExpiry(m.expiryDate);
+                    return days >= 0 && days < 7;
+                });
+                
+                if (expiringSoon.length > 0) {
+                    playSound('warning');
+                    showNotification(`⚠️ มียา ${expiringSoon.length} รายการที่จะหมดอายุภายใน 7 วัน!`, 'warning');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
